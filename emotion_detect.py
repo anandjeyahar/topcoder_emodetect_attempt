@@ -9,6 +9,7 @@ import sys
 sys.path.append('/home/anand/Downloads/devbox_configs/')
 import backend
 from backend import fdmod
+import json
 
 logger = logging.getLogger()
 
@@ -30,6 +31,7 @@ parser.add_argument('--input-file', dest='inpFile', type=str, default='./example
 
 
 trainingData = dict()       # Dict of the form {<imagefilename>: [list of bools for emotion, categories below]
+featureData = dict()
 emotionCategories = ['angry', 'anxious', 'confident', 'happy', 'neutral', 'sad', 'surprised']
 LOW_THRESH = 10.0
 HIGH_THRESH = 15.0
@@ -65,12 +67,11 @@ def main(args):
             cv.CvtColor(image, grayImage, cv.CV_BGR2GRAY)
             cv.Canny(grayImage, edgeImage, LOW_THRESH, HIGH_THRESH)
             cv2.imwrite(outImageFile, numpy.asarray(edgeImage[:,:]))
-    for key in [trainingData.keys()[4]]:
+
+    for key in trainingData.keys():
         image = cv2.imread(os.path.join('./','data',key), cv.CV_LOAD_IMAGE_COLOR)
         FD.image = image
-        print image.shape
         grayImage = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        print grayImage.shape
         #cv.CreateImage((250, 250), 8,1)
         #cv.CvtColor(image, grayImage, cv.CV_BGR2GRAY)
         #cv2.imshow('gray', numpy.asarray(grayImage[:,:]))
@@ -78,8 +79,10 @@ def main(args):
         FD.detectFace()
         FD.detectEyes()
         FD.detectLips()
-        print FD.features
+        featureData.update({key:FD.features})
 
+    with open('calculated_data.json', 'wb') as out_fd:
+        out_fd.write(json.dumps(featureData))
     foreheadArea = ()
     # Count the edges in the area(forehead) above the eyes
     # Count the edges in the area(cheeks) around the mouth
