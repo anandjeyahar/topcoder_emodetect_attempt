@@ -25,6 +25,8 @@ emotionCategories = ['angry', 'anxious', 'confident', 'happy', 'neutral', 'sad',
 CANNY_LOW_THRESH = 5.0
 CANNY_HIGH_THRESH = 15.0
 
+allEdgeCounts = dict()
+
 def getImageAreas(imgFile):
     featureData = dict()
     FD = fdmod.FeatureDetect()
@@ -47,18 +49,27 @@ def getCannyEdges(imgFile):
     cv.CvtColor(image, grayImage, cv.CV_BGR2GRAY)
     cv.Canny(grayImage, edgeImage, CANNY_LOW_THRESH, CANNY_HIGH_THRESH)
     return numpy.asarray(edgeImage[:,:])
-    #cv2.imshow('test', numpy.asarray(edgeImage[:,:]))
-    #cv2.waitKey(200)
-    #cv2.imwrite(outImageFile, numpy.asarray(edgeImage[:,:]))
+
 def count_edges(edgeImageArray, pixelRange):
     """
     Function counts edges/pixels within the given range, with 255 value
-    pixelRange: is a two-tuple of x1, y1, x2,y2
-
+    pixelRange: is a tetra-ple of x1, y1, x2,y2
     """
+    # TODO; take count at multiple axes and average
+    x1, y1, x2, y2 = pixelRange
     verticalEdges = 0
-    for y in range(y1:y2):
-        verticalEdges += 1
+    horizontalEdges = 0
+    midX = (x1 + x2) / 2
+    midY = (y1 + y2) / 2
+    print edgeImageArray
+    for y in range(y1, y2):
+        if edgeImageArray[midX][y] == 255:
+            verticalEdges += 1
+
+    for x in range(x1, x2):
+        if edgeImageArray[x][midY] == 255:
+            horizontalEdges += 1
+    return {'vertical': verticalEdges, 'horizontal': horizontalEdges}
 
 def main(args):
 
@@ -81,12 +92,12 @@ def main(args):
             logging.warn('No mouthCorners for %s'% key)
             break
         # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
-        forehead = ((min(calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('faceCorners')[0]),
-                    max(calcAreas.get(key).get('eyeCorners')[1], calcAreas.get(key).get('faceCorners')[1]),),
-                    (max(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]),
-                        min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3])))
-        getCannyEdges(key)
-        print forehead
+        forehead = (min(calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('faceCorners')[0]),
+                    max(calcAreas.get(key).get('eyeCorners')[1], calcAreas.get(key).get('faceCorners')[1]),
+                    max(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]),
+                        min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3]))
+        edgeImage = getCannyEdges(key)
+        allEdgeCounts.update({'foreheadEdges': count_edges(edgeImage, forehead)})
         mouthArea = ()
     # Count the edges in the area(forehead) above the eyes
     # Vertical/edges perpendicular to eyes ==> confusion/anxiety
