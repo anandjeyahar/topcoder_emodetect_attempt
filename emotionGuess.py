@@ -33,7 +33,6 @@ def getImageAreas(imgFile):
     FD.detectEyes()
     FD.detectLips()
     featureData.update({imgFile:FD.features})
-    featureData.get(imgFile).update({'emotion':trainingData.get(imgFile)})
     return featureData
 
 def getCannyEdges(imgFile):
@@ -52,14 +51,19 @@ def main(args):
         calcAreas = json.load(calc_fd)
     with open('./trainingData.json', 'rb') as inp_fd:
         trainingData = json.load(inp_fd)
-    for key in [trainingData.keys()[3]]:
+
+    for key in [trainingData.keys()[2]]:
         calcAreas = getImageAreas(key)
-        print calcAreas.get(key), key
+        calcAreas.get(key).update({'emotion':trainingData.get(key)})
+        print calcAreas.get(key), key 
         if not calcAreas.get(key).get('eyeCorners'):
-            logging.warn('No eyeCorners for %s', % key)
+            logging.warn('No eyeCorners for %s'% key)
             break
         if not calcAreas.get(key).get('faceCorners'):
-            logging.warn('No eyeCorners for %s', % key)
+            logging.warn('No faceCorners for %s'% key)
+            break
+        if not calcAreas.get(key).get('lipCorners'):
+            logging.warn('No mouthCorners for %s'% key)
             break
         # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
         forehead = ((min(calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('faceCorners')[0]),
@@ -67,8 +71,7 @@ def main(args):
                     (max(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]),
                         min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3])))
         print forehead
-
-    foreheadArea = () # higher co-ordinates of eye corners and higher co-ordinates of face.
+        mouthArea = ()
     # Count the edges in the area(forehead) above the eyes
     # Vertical/edges perpendicular to eyes ==> confusion/anxiety
     # Count the edges in the area(cheeks) around the mouth
