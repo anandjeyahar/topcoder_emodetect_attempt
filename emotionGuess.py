@@ -8,6 +8,7 @@ import logging
 import cv2
 import cv
 import os
+import numpy
 logger = logging.getLogger()
 parser = argparse.ArgumentParser(description='Run wishlist python flask app')
 
@@ -21,6 +22,8 @@ parser.add_argument('--train-file', dest='trainingFile', type=str,
 
 trainingData = dict()       # Dict of the form {<imagefilename>: [list of bools for emotion, categories below]
 emotionCategories = ['angry', 'anxious', 'confident', 'happy', 'neutral', 'sad', 'surprised']
+CANNY_LOW_THRESH = 10.0
+CANNY_HIGH_THRESH = 15.0
 
 def getImageAreas(imgFile):
     featureData = dict()
@@ -38,12 +41,13 @@ def getImageAreas(imgFile):
 def getCannyEdges(imgFile):
 
     image = cv.LoadImage(os.path.join('./', 'data', imgFile), cv.CV_LOAD_IMAGE_COLOR)
-    outImageFile = os.path.join(args.outFolder, 'data', 'edges', imgFile)
+    #outImageFile = os.path.join(args.outFolder, 'data', 'edges', imgFile)
     edgeImage = cv.CreateImage((250, 250), 8,1)
     grayImage = cv.CreateImage((250, 250), 8,1)
     cv.CvtColor(image, grayImage, cv.CV_BGR2GRAY)
     cv.Canny(grayImage, edgeImage, CANNY_LOW_THRESH, CANNY_HIGH_THRESH)
-    cv2.imwrite(outImageFile, numpy.asarray(edgeImage[:,:]))
+    print numpy.asarray(edgeImage[:,:])
+    #cv2.imwrite(outImageFile, numpy.asarray(edgeImage[:,:]))
 
 def main(args):
 
@@ -52,10 +56,10 @@ def main(args):
     with open('./trainingData.json', 'rb') as inp_fd:
         trainingData = json.load(inp_fd)
 
-    for key in [trainingData.keys()[2]]:
+    for key in [trainingData.keys()[10]]:
         calcAreas = getImageAreas(key)
         calcAreas.get(key).update({'emotion':trainingData.get(key)})
-        print calcAreas.get(key), key 
+        print calcAreas.get(key), key
         if not calcAreas.get(key).get('eyeCorners'):
             logging.warn('No eyeCorners for %s'% key)
             break
@@ -70,6 +74,7 @@ def main(args):
                     max(calcAreas.get(key).get('eyeCorners')[1], calcAreas.get(key).get('faceCorners')[1]),),
                     (max(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]),
                         min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3])))
+        getCannyEdges(key)
         print forehead
         mouthArea = ()
     # Count the edges in the area(forehead) above the eyes
