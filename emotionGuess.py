@@ -22,7 +22,7 @@ parser.add_argument('--train-file', dest='trainingFile', type=str,
 
 trainingData = dict()       # Dict of the form {<imagefilename>: [list of bools for emotion, categories below]
 emotionCategories = ['angry', 'anxious', 'confident', 'happy', 'neutral', 'sad', 'surprised']
-CANNY_LOW_THRESH = 10.0
+CANNY_LOW_THRESH = 5.0
 CANNY_HIGH_THRESH = 15.0
 
 def getImageAreas(imgFile):
@@ -46,8 +46,19 @@ def getCannyEdges(imgFile):
     grayImage = cv.CreateImage((250, 250), 8,1)
     cv.CvtColor(image, grayImage, cv.CV_BGR2GRAY)
     cv.Canny(grayImage, edgeImage, CANNY_LOW_THRESH, CANNY_HIGH_THRESH)
-    print numpy.asarray(edgeImage[:,:])
+    return numpy.asarray(edgeImage[:,:])
+    #cv2.imshow('test', numpy.asarray(edgeImage[:,:]))
+    #cv2.waitKey(200)
     #cv2.imwrite(outImageFile, numpy.asarray(edgeImage[:,:]))
+def count_edges(edgeImageArray, pixelRange):
+    """
+    Function counts edges/pixels within the given range, with 255 value
+    pixelRange: is a two-tuple of x1, y1, x2,y2
+
+    """
+    verticalEdges = 0
+    for y in range(y1:y2):
+        verticalEdges += 1
 
 def main(args):
 
