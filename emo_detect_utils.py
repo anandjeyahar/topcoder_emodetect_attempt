@@ -77,10 +77,13 @@ def main(args):
         FD.detectEyes()
         FD.detectLips()
         featureData.update({key:FD.features})
+        featureData.get(key).update({'emotion':trainingData.get(key)})
 
     with open('calculated_data.json', 'wb') as out_fd:
         out_fd.write(json.dumps(featureData))
 
+    with open('trainingData.json', 'wb') as out_fd:
+        out_fd.write(json.dumps(trainingData))
 if __name__ == '__main__':
     args = parser.parse_args()
     main(args)
