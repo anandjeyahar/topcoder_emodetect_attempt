@@ -112,6 +112,8 @@ def main(args):
     # Count the edges in the area(cheeks) around the mouth
     # Count the edges in the area(eye sockets) around the eyes(edges parallel to eye shape ==> happy
     # find reasonable weighted sum of these three counts to form a measure that cna classify into the seven categories of emoiton
+
+    # write to csv imgName, foreheadEdges(ho), forehadedges(v), ,,,,emotion
     with open('allEdgeCounts.json', 'wb') as out_fd:
         out_fd.write(json.dumps(allEdgeCounts))
     pass
