@@ -1,8 +1,6 @@
 import argparse
 import sys
-sys.path.append('/home/anand/Downloads/devbox_configs/')
-import backend
-from backend import fdmod
+import facedetect as fdmod
 import json
 import logging
 import cv2
@@ -61,7 +59,6 @@ def count_edges(edgeImageArray, pixelRange):
     horizontalEdges = 0
     midX = (x1 + x2) / 2
     midY = (y1 + y2) / 2
-    print edgeImageArray
     for y in range(y1, y2):
         if edgeImageArray[midX][y] == 255:
             verticalEdges += 1
@@ -78,33 +75,33 @@ def main(args):
     with open('./trainingData.json', 'rb') as inp_fd:
         trainingData = json.load(inp_fd)
 
-    for key in [trainingData.keys()[10]]:
+    for key in trainingData.keys():
         calcAreas = getImageAreas(key)
         calcAreas.get(key).update({'emotion':trainingData.get(key)})
-        print calcAreas.get(key), key
         if not calcAreas.get(key).get('eyeCorners'):
             logging.warn('No eyeCorners for %s'% key)
-            break
+            continue
         if not calcAreas.get(key).get('faceCorners'):
             logging.warn('No faceCorners for %s'% key)
-            break
+            continue
         if not calcAreas.get(key).get('lipCorners'):
             logging.warn('No mouthCorners for %s'% key)
-            break
+            continue
         # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
         forehead = (min(calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('faceCorners')[0]),
                     max(calcAreas.get(key).get('eyeCorners')[1], calcAreas.get(key).get('faceCorners')[1]),
                     max(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]),
                         min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3]))
         edgeImage = getCannyEdges(key)
-        allEdgeCounts.update({'foreheadEdges': count_edges(edgeImage, forehead)})
+        allEdgeCounts[key] = {'foreheadEdges': count_edges(edgeImage, forehead)}
         mouthArea = ()
     # Count the edges in the area(forehead) above the eyes
     # Vertical/edges perpendicular to eyes ==> confusion/anxiety
     # Count the edges in the area(cheeks) around the mouth
     # Count the edges in the area(eye sockets) around the eyes(edges parallel to eye shape ==> happy
-    #
     # find reasonable weighted sum of these three counts to form a measure that cna classify into the seven categories of emoiton
+    with open('allEdgeCounts.json', 'wb') as out_fd:
+        out_fd.write(json.dumps(allEdgeCounts))
     pass
 
 if __name__ == '__main__':
