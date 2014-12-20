@@ -88,15 +88,22 @@ def main(args):
             logging.warn('No mouthCorners for %s'% key)
             continue
         # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
-        forehead = (min(calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('faceCorners')[0]),
-                    max(calcAreas.get(key).get('eyeCorners')[1], calcAreas.get(key).get('faceCorners')[1]),
-                    max(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]),
-                        min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3]))
+        forehead = (calcAreas.get(key).get('faceCorners')[0], calcAreas.get(key).get('eyeCorners')[1],
+                    calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('eyeCorners')[4])
+        eyeSides = (max(calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('faceCorners')[0]) - 20,
+                    max(calcAreas.get(key).get('eyeCorners')[1], calcAreas.get(key).get('faceCorners')[1]) + 20,
+                    min(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]) + 20,
+                    min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3]) + 20,
+                    )
+        chin =(calcAreas.get(key).get('lipCorners')[0], calcAreas.get(key).get('lipCorners')[3],
+                calcAreas.get(key).get('faceCorners')[2], calcAreas.get(key).get('faceCorners')[3])
         edgeImage = getCannyEdges(key)
-        allEdgeCounts[key] = {'foreheadEdges': count_edges(edgeImage, forehead)}
-        mouthArea = ()
+        eyeSidesEdgeCount = count_edges(edgeImage, eyeSides) - count_edges(edgeImage, calcAreas.get(key).get('eyeCorners'))
+        allEdgeCounts[key] = {'foreheadEdges': count_edges(edgeImage, forehead)
+                                '':   }
     # Count the edges in the area(forehead) above the eyes
     # Vertical/edges perpendicular to eyes ==> confusion/anxiety
+    # horizontal edger parallel to mouth on the chin ==> disgust
     # Count the edges in the area(cheeks) around the mouth
     # Count the edges in the area(eye sockets) around the eyes(edges parallel to eye shape ==> happy
     # find reasonable weighted sum of these three counts to form a measure that cna classify into the seven categories of emoiton
