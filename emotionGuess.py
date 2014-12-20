@@ -74,7 +74,7 @@ def main(args):
         calcAreas = json.load(calc_fd)
     with open('./trainingData.json', 'rb') as inp_fd:
         trainingData = json.load(inp_fd)
-
+    eyeSidesEdges = dict()
     for key in trainingData.keys():
         calcAreas = getImageAreas(key)
         calcAreas.get(key).update({'emotion':trainingData.get(key)})
@@ -84,23 +84,28 @@ def main(args):
         if not calcAreas.get(key).get('faceCorners'):
             logging.warn('No faceCorners for %s'% key)
             continue
+        # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
+        forehead = (calcAreas.get(key).get('faceCorners')[0], calcAreas.get(key).get('eyeCorners')[1],
+                    calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('eyeCorners')[1])
+        eyeSidesLeft = (calcAreas.get(key).get('eyeCorners')[0] - 20, calcAreas.get(key).get('eyeCorners')[1],
+                     calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('eyeCorners')[2])
+        eyeSidesRight = (calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('eyeCorners')[1],
+                        calcAreas.get(key).get('eyeCorners')[2] + 20, calcAreas.get(key).get('eyeCorners')[3])
+        if not eyeSidesLeft <= calcAreas.get(key).get('eyeCorners'):
+            logging.warn("%s image eyes are messed up %s" %(key, str(calcAreas.get(key).get('eyeCorners'))))
+        assert eyeSidesRight >= calcAreas.get(key).get('eyeCorners')
         if not calcAreas.get(key).get('lipCorners'):
             logging.warn('No mouthCorners for %s'% key)
             continue
-        # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
-        forehead = (calcAreas.get(key).get('faceCorners')[0], calcAreas.get(key).get('eyeCorners')[1],
-                    calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('eyeCorners')[4])
-        eyeSides = (max(calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('faceCorners')[0]) - 20,
-                    max(calcAreas.get(key).get('eyeCorners')[1], calcAreas.get(key).get('faceCorners')[1]) + 20,
-                    min(calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('faceCorners')[2]) + 20,
-                    min(calcAreas.get(key).get('eyeCorners')[3], calcAreas.get(key).get('faceCorners')[3]) + 20,
-                    )
         chin =(calcAreas.get(key).get('lipCorners')[0], calcAreas.get(key).get('lipCorners')[3],
                 calcAreas.get(key).get('faceCorners')[2], calcAreas.get(key).get('faceCorners')[3])
         edgeImage = getCannyEdges(key)
-        eyeSidesEdgeCount = count_edges(edgeImage, eyeSides) - count_edges(edgeImage, calcAreas.get(key).get('eyeCorners'))
-        allEdgeCounts[key] = {'foreheadEdges': count_edges(edgeImage, forehead)
-                                '':   }
+        eyeSidesRightEdges = count_edges(edgeImage, eyeSidesRight)
+        for k, v in count_edges(edgeImage, eyeSidesLeft).iteritems():
+            eyeSidesEdges[k] = v + eyeSidesRightEdges.get(k)
+        allEdgeCounts[key] = {'foreheadEdges': count_edges(edgeImage, forehead),
+                                'eyeSidesEdges': eyeSidesEdges,
+                                'chinEdges': count_edges(edgeImage, chin)}
     # Count the edges in the area(forehead) above the eyes
     # Vertical/edges perpendicular to eyes ==> confusion/anxiety
     # horizontal edger parallel to mouth on the chin ==> disgust
