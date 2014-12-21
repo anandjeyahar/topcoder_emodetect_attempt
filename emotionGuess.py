@@ -5,8 +5,11 @@ import json
 import logging
 import cv2
 import cv
+import csv
 import os
 import numpy
+import statsmodels
+
 logger = logging.getLogger()
 parser = argparse.ArgumentParser(description='Run wishlist python flask app')
 
@@ -75,37 +78,53 @@ def main(args):
     with open('./trainingData.json', 'rb') as inp_fd:
         trainingData = json.load(inp_fd)
     eyeSidesEdges = dict()
-    for key in trainingData.keys():
-        calcAreas = getImageAreas(key)
-        calcAreas.get(key).update({'emotion':trainingData.get(key)})
-        if not calcAreas.get(key).get('eyeCorners'):
-            logging.warn('No eyeCorners for %s'% key)
-            continue
-        if not calcAreas.get(key).get('faceCorners'):
-            logging.warn('No faceCorners for %s'% key)
-            continue
-        # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
-        forehead = (calcAreas.get(key).get('faceCorners')[0], calcAreas.get(key).get('eyeCorners')[1],
-                    calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('eyeCorners')[1])
-        eyeSidesLeft = (calcAreas.get(key).get('eyeCorners')[0] - 20, calcAreas.get(key).get('eyeCorners')[1],
-                     calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('eyeCorners')[2])
-        eyeSidesRight = (calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('eyeCorners')[1],
-                        calcAreas.get(key).get('eyeCorners')[2] + 20, calcAreas.get(key).get('eyeCorners')[3])
-        if not eyeSidesLeft <= calcAreas.get(key).get('eyeCorners'):
-            logging.warn("%s image eyes are messed up %s" %(key, str(calcAreas.get(key).get('eyeCorners'))))
-        assert eyeSidesRight >= calcAreas.get(key).get('eyeCorners')
-        if not calcAreas.get(key).get('lipCorners'):
-            logging.warn('No mouthCorners for %s'% key)
-            continue
-        chin =(calcAreas.get(key).get('lipCorners')[0], calcAreas.get(key).get('lipCorners')[3],
-                calcAreas.get(key).get('faceCorners')[2], calcAreas.get(key).get('faceCorners')[3])
-        edgeImage = getCannyEdges(key)
-        eyeSidesRightEdges = count_edges(edgeImage, eyeSidesRight)
-        for k, v in count_edges(edgeImage, eyeSidesLeft).iteritems():
-            eyeSidesEdges[k] = v + eyeSidesRightEdges.get(k)
-        allEdgeCounts[key] = {'foreheadEdges': count_edges(edgeImage, forehead),
-                                'eyeSidesEdges': eyeSidesEdges,
-                                'chinEdges': count_edges(edgeImage, chin)}
+    fields = ['filename', 'foreheadHorizEdges', 'foreheadVertEdges',
+                'eyeSidesHorizEdges', 'eyeSidesVertEdges',
+               'chinHorizEdges', 'chinVertEdges', 'emotion']
+    with open('allFeaturesData.csv', 'wb') as csv_fd:
+        csvWriter = csv.DictWriter(csv_fd, fieldnames=fields)
+        csvWriter.writeheader()
+
+        for key in trainingData.keys():
+            calcAreas = getImageAreas(key)
+            calcAreas.get(key).update({'emotion':trainingData.get(key)})
+            if not calcAreas.get(key).get('eyeCorners'):
+                logging.warn('No eyeCorners for %s'% key)
+                continue
+            if not calcAreas.get(key).get('faceCorners'):
+                logging.warn('No faceCorners for %s'% key)
+                continue
+            # top-left corner is 0,0 so forehead is above eyes, therefore starts at min()
+            forehead = (calcAreas.get(key).get('faceCorners')[0], calcAreas.get(key).get('eyeCorners')[1],
+                        calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('eyeCorners')[1])
+            eyeSidesLeft = (calcAreas.get(key).get('eyeCorners')[0] - 20, calcAreas.get(key).get('eyeCorners')[1],
+                         calcAreas.get(key).get('eyeCorners')[0], calcAreas.get(key).get('eyeCorners')[2])
+            eyeSidesRight = (calcAreas.get(key).get('eyeCorners')[2], calcAreas.get(key).get('eyeCorners')[1],
+                            calcAreas.get(key).get('eyeCorners')[2] + 20, calcAreas.get(key).get('eyeCorners')[3])
+            if not eyeSidesLeft <= calcAreas.get(key).get('eyeCorners'):
+                logging.warn("%s image eyes are messed up %s" %(key, str(calcAreas.get(key).get('eyeCorners'))))
+            assert eyeSidesRight >= calcAreas.get(key).get('eyeCorners')
+            if not calcAreas.get(key).get('lipCorners'):
+                logging.warn('No mouthCorners for %s'% key)
+                continue
+            chin =(calcAreas.get(key).get('lipCorners')[0], calcAreas.get(key).get('lipCorners')[3],
+                    calcAreas.get(key).get('faceCorners')[2], calcAreas.get(key).get('faceCorners')[3])
+            edgeImage = getCannyEdges(key)
+            eyeSidesRightEdges = count_edges(edgeImage, eyeSidesRight)
+            for k, v in count_edges(edgeImage, eyeSidesLeft).iteritems():
+                eyeSidesEdges[k] = v + eyeSidesRightEdges.get(k)
+            allEdgeCounts[key] = {'foreheadEdges': count_edges(edgeImage, forehead),
+                                    'eyeSidesEdges': eyeSidesEdges,
+                                    'chinEdges': count_edges(edgeImage, chin)}
+            row = {'filename': key, 'foreheadHorizEdges': allEdgeCounts.get(key).get('foreheadEdges').get('horizontal'),
+                    'foreheadVertEdges': allEdgeCounts.get(key).get('foreheadEdges').get('vertical'),
+                    'eyeSidesHorizEdges': eyeSidesEdges.get('horizontal'),
+                    'eyeSidesVertEdges': eyeSidesEdges.get('vertical'),
+                    'chinHorizEdges': allEdgeCounts.get(key).get('chinEdges').get('horizontal'),
+                    'chinVertEdges': allEdgeCounts.get(key).get('chinEdges').get('vertical'),
+                    'emotion': emotionCategories[trainingData.get(key).index(1)]
+                    }
+            csvWriter.writerow(row)
     # Count the edges in the area(forehead) above the eyes
     # Vertical/edges perpendicular to eyes ==> confusion/anxiety
     # horizontal edger parallel to mouth on the chin ==> disgust
@@ -114,6 +133,7 @@ def main(args):
     # find reasonable weighted sum of these three counts to form a measure that cna classify into the seven categories of emoiton
 
     # write to csv imgName, foreheadEdges(ho), forehadedges(v), ,,,,emotion
+
     with open('allEdgeCounts.json', 'wb') as out_fd:
         out_fd.write(json.dumps(allEdgeCounts))
     pass
