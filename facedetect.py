@@ -28,16 +28,19 @@ class FeatureDetect(object):
         if classifier == CLASSIFICATIONS[0]:
             # TODO: add support for multiple training files and going through them one by one.
             self.frontalFaceCascPath = map(CASCADE_PATH, ['haarcascade_frontalface_default.xml',
-                                                          'haarcascade_frontalface_alt2.xml',
-                                                          'haarcascade_frontalface_alt_tree.xml',
-                                                          'haarcascade_frontalface_alt.xml'])
+                                                          # 'haarcascade_frontalface_alt2.xml',
+                                                          # 'haarcascade_frontalface_alt_tree.xml',
+                                                          # 'haarcascade_frontalface_alt.xml'
+                                                          ])
             self.mouthCascPath = map(CASCADE_PATH, ['Mouth.xml',
-                                                    'haarcascade_smile.xml'])
+                                                    # 'haarcascade_smile.xml'
+                                                    ])
             self.noseCascPath = map(CASCADE_PATH, ['Nariz.xml'])
             self.eyeCascPath = map(CASCADE_PATH, ['haarcascade_eye.xml',
-                                                'haarcascade_eye_tree_eyeglasses.xml',
-                                                'haarcascade_righteye_2splits.xml',
-                                                'haarcascade_lefteye_2splits.xml',])
+                                                # 'haarcascade_eye_tree_eyeglasses.xml',
+                                                # 'haarcascade_righteye_2splits.xml',
+                                                # 'haarcascade_lefteye_2splits.xml',
+                                                ])
             # Create the haar cascade
             self.faceCascade = map(cv2.CascadeClassifier, self.frontalFaceCascPath)
             self.mouthCascade = map(cv2.CascadeClassifier, self.mouthCascPath)
