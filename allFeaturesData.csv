@@ -1,3 +1,4 @@
 filename,foreheadHorizEdges,foreheadVertEdges,eyeSidesHorizEdges,eyeSidesVertEdges,lipSidesHorizEdges,lipSidesVertEdges,chinHorizEdges,chinVertEdges,emotion
 3319.jpg,nan,8.0,11.0,nan,9.0,nan,18.0,nan,neutral
 5310.jpg,nan,1.0,7.0,nan,8.0,nan,8.0,nan,anxious
+1890.jpg,nan,14.0,29.0,nan,17.0,nan,32.0,nan,neutral

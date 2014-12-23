@@ -1,0 +1,4 @@
+redis
+pyopencv
+pillow
+numpy
